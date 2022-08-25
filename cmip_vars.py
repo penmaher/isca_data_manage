@@ -2,7 +2,7 @@ import pdb
 from matplotlib import pyplot as plt
 import numpy as np
 
-from eddy_terms import Eddy_Flux
+from eddies.eddy_terms import Eddy_Flux
 
 latent_heat_cond  = 2.5e6 #J/kg
 fill_value = 1e20 
@@ -26,7 +26,7 @@ def calc_eddy_terms(data):
                       'Transient eddy heat flux','m.K/s']
     var_info['hus'] = ['vsqs','sphum_v',
                       'Transient eddy moisture flux','m.kg/s.kg']
-        
+  
     for var in ['ua','ta', 'hus']:
         EF = Eddy_Flux() 
         mmc, stat_eddy, trans_eddy = EF.get_flux_terms(data, 'va', var,
@@ -46,7 +46,8 @@ def calc_eddy_terms(data):
 def get_zonal_climatology(data):
 
     for var in data.keys():
-        #test if already zonal mean (ie eddy terms
+        #test if already zonal mean (ie eddy terms)
+
         if 'lon' in data[var].coords.keys():        
             data = data.assign({var:data[var].mean(dim=['time','lon'])})
         elif 'time' in data[var].coords.keys():        
@@ -80,7 +81,7 @@ class CMIP_compliant():
                      'flux_lhe':'hfls','flux_t':'hfss',
                     }
 
-        data = data.rename(name_swap,  inplace=True)
+        data = data.rename(name_swap)
  
         data = self.prep_precip(data)        
 
@@ -115,7 +116,7 @@ class CMIP_compliant():
                      'flux_lhe':'hfls','flux_t':'hfss',
                     }
         
-        data = data.rename(name_swap,  inplace=True)
+        data = data.rename(name_swap)
         data = self.prep_precip(data)   
         data = self.remove_vars_daily(data)
         file_out = ('{0}{1}.nc').format(path, name)
@@ -176,15 +177,15 @@ class CMIP_compliant():
         rad_terms_rename  = {'soc_olr':'rlut', 'soc_surf_flux_lw_down':'rlds',
                              'soc_toa_sw_down':'rsdt','soc_surf_flux_sw_down':'rsds'}
 
-        data = data.rename(rad_terms_rename,  inplace=True)
+        data = data.rename(rad_terms_rename)
 
         #remove net terms which I don't need
         rad_terms_remove = ['soc_surf_flux_lw','soc_toa_sw', 'soc_surf_flux_sw']
         data = data.drop(rad_terms_remove)
 
         #add rad terms to the array
-        rad_list_add  = {'rlus':lwus, 'rsut':swut, 'rsus':swus}
-        data = data.assign(rad_list_add)
+        rad_list = ['rlus', 'rsut', 'rsus']
+        data = data.assign({'rlus':lwus, 'rsut':swut, 'rsus':swus})
 
         rad_cmip_name = {'rlut': 'long wave up TOA (OLR) and long wave up surf', 
                          'rlds': 'long wave down surface',
@@ -194,7 +195,7 @@ class CMIP_compliant():
                          'rsds': 'short wave down surface',
                          'rsus': 'short wave up surface'}
 
-        for i in rad_list_add.keys():
+        for i in rad_list:
             data[i].attrs['units']='watts/m2'  
             data[i].attrs['long_name'] = rad_cmip_name[i]
             data[i].attrs['_FillValue']     = fill_value
